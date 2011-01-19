@@ -21,10 +21,13 @@ version_str = "#{node[:riak][:package][:version][:major]}.#{node[:riak][:package
 base_uri = "http://downloads.basho.com/riak/riak-#{version_str}/"
 base_filename = "riak-#{version_str}.#{node[:riak][:package][:version][:incremental]}"
 
+group "riak"
+
 user "riak" do
-  gid "nogroup"
-  shell "/bin/false"
-  home "/tmp"
+  gid "riak"
+  shell "/bin/bash"
+  home "/var/lib/riak"
+  system true
 end
 
 package_file =  case node[:riak][:package][:type]
@@ -111,7 +114,7 @@ end
 
 if node[:riak][:package][:type].eql?("binary")
   service "riak" do
-    supports :start => true, :stop => true, :status => true, :restart => true
+    supports :start => true, :stop => true, :restart => true
     action [ :enable ]
     subscribes :restart, resources(:template => [ "#{node[:riak][:package][:config_dir]}/app.config",
                                                   "#{node[:riak][:package][:config_dir]}/vm.args" ])
