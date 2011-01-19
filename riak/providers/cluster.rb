@@ -39,10 +39,10 @@ def load_current_resource
 end
 
 action :join do
-  unless current_resource.joined
+  if !current_resource.joined && peer = random_cluster_member
     execute "Joining node #{new_resource.node_name} to Riak cluster #{new_resource.cluster_name}" do
-      command "riak-admin join #{random_cluster_member}"
-      path new_resource.riak_admin_path
+      command "riak-admin join #{peer}"
+      path [new_resource.riak_admin_path]
     end
     new_resource.updated_by_last_action(true)
   end
@@ -51,7 +51,9 @@ end
 
 action :wait_for_ringready do
   begin
-    timeout(new_resource.timeout, &method(:wait_for_ringready))
+    timeout(new_resource.timeout) do
+      wait_for_ring
+    end
   rescue Timeout::Error
     Chef::Application.fatal! "Riak cluster ring did not converge within #{new_resource.timeout} seconds!"
   end
@@ -60,7 +62,7 @@ end
 private
 
 def ringready
-  cmd = shell_out("riak-admin ringready", :environment => {"PATH" => new_resource.riak_admin_path})
+  cmd = shell_out("#{new_resource.riak_admin_path}/riak-admin ringready")
   {
     :ready => cmd.stdout =~ /TRUE/,
     :members => cmd.stdout.scan(/'([^',]+)'/).flatten,
@@ -73,6 +75,6 @@ def wait_for_ring
 end
 
 def random_cluster_member
-  tmp = current_resource.cluster_members.reject {|n| n == current_resource.cluster_name }
+  tmp = current_resource.cluster_members.reject {|n| n == new_resource.node_name }
   tmp[ rand(tmp.size) ]
 end

@@ -20,21 +20,24 @@
 
 include_recipe "riak::default"
 
-bin_paths = if node[:riak][:package][:type] == "binary"
-              ["/usr/sbin"]
-            else
-              ["#{node[:riak][:package][:prefix]}/riak/bin"]
-            end
+if node[:riak][:package][:type] == "binary"
+  bin_path = "/usr/sbin"
+else
+  bin_path = "#{node[:riak][:package][:prefix]}/riak/bin"
+end
 
-execute "Wait for Riak to start" do
-  command "riak-admin wait-for-service riak_kv #{node[:riak][:erlang][:node_name]}"
-  path bin_paths
-  user 'riak'
-  timeout 30
+# Riak's packaged init.d script doesn't work. We'll use the bin script
+# instead.
+bash "Start riak" do
+  code "(#{bin_path}/riak ping) || (#{bin_path}/riak start)"
+end
+# Wait for riak_kv to be available, timeout after 45 seconds
+execute "#{bin_path}/riak-admin wait-for-service riak_kv #{node[:riak][:erlang][:node_name]}" do
+  timeout 45
 end
 
 riak_cluster node[:riak][:core][:cluster_name] do
   node_name node[:riak][:erlang][:node_name]
   action :join
-  riak_admin_path bin_paths.first
+  riak_admin_path bin_path
 end
