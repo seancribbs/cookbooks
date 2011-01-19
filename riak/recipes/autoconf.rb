@@ -1,5 +1,5 @@
 #
-# Author:: Benjamin Black (<b@b3k.us>)
+# Author:: Benjamin Black (<b@b3k.us>) and Sean Cribbs (<sean@basho.com>)
 # Cookbook Name:: riak
 # Recipe:: autoconf
 #
@@ -18,15 +18,23 @@
 # limitations under the License.
 #
 
-require 'socket'
-
-seeds = intra = []
-search(:node, "riak_node_cluster_name:#{node[:riak][:node][:cluster_name]}") do |n|
-  intra << IPSocket.getaddress(n["riak"]["erlang"]["node_name"].split("@").last)
-  if n["riak"]["node"]["seed"]
-    seeds << n["ipaddress"] unless n["ipaddress"].eql?(node[:ipaddress])
-  end
-end
-node[:riak][:core][:default_gossip_seed] = seeds.sort_by{rand}.first if seeds.length > 0
-
 include_recipe "riak::default"
+
+bin_paths = if node[:riak][:package][:type] == "binary"
+              ["/usr/sbin"]
+            else
+              ["#{node[:riak][:package][:prefix]}/riak/bin"]
+            end
+
+execute "Wait for Riak to start" do
+  command "riak-admin wait-for-service riak_kv #{node[:riak][:erlang][:node_name]}"
+  path bin_paths
+  user 'riak'
+  timeout 30
+end
+
+riak_cluster node[:riak][:core][:cluster_name] do
+  node_name node[:riak][:erlang][:node_name]
+  action :join
+  riak_admin_path bin_paths.first
+end
