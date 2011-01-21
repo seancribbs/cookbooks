@@ -28,7 +28,7 @@ recipe            "riak::innostore", "Install and configure the Innostore backen
 recipe            "riak::iptables", "Automatically configure iptables rules for Riak."
 depends           "iptables"
 
-%w{ubuntu debian centos redhat fedora}.each do |os|
+%w{ubuntu debian}.each do |os|
   supports os
 end
 #

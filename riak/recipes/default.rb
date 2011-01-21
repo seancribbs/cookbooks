@@ -30,19 +30,19 @@ user "riak" do
   system true
 end
 
+machines = {"x86_64" => "amd64", "i386" => "i386", "i686" => "i386"}
 package_file =  case node[:riak][:package][:type]
                 when "binary"
                   case node[:platform]
                   when "debian","ubuntu"
                     include_recipe "riak::iptables"
-                    machines = {"x86_64" => "amd64", "i386" => "i386", "i686" => "i386"} 
                     "#{base_filename.gsub(/\-/, '_')}-#{node[:riak][:package][:version][:build]}_#{machines[node[:kernel][:machine]]}.deb"
                   when "centos","redhat","suse"
-                    "#{base_filename}-#{node[:riak][:package][:version][:build]}.el5.#{node[:kernel][:machine]}.rpm"
+                    "#{base_filename}-#{node[:riak][:package][:version][:build]}.el5.#{machines[node[:kernel][:machine]]}.rpm"
                   when "fedora"
                     "#{base_filename}-#{node[:riak][:package][:version][:build]}.fc12.#{node[:kernel][:machine]}.rpm"
-                  # when "mac_os_x"
-                  #  "#{base_filename}.osx.#{node[:kernel][:machine]}.tar.gz"
+                    # when "mac_os_x"
+                    #  "#{base_filename}.osx.#{node[:kernel][:machine]}.tar.gz"
                   end
                 when "source"
                   "#{base_filename}.tar.gz"
@@ -67,21 +67,21 @@ when "binary"
     source "/tmp/riak_pkg/#{package_file}"
     action :install
     provider value_for_platform(
-      [ "ubuntu", "debian" ] => {"default" => Chef::Provider::Package::Dpkg},
-      [ "redhat", "centos", "fedora", "suse" ] => {"default" => Chef::Provider::Package::Rpm}
-    )
+                                [ "ubuntu", "debian" ] => {"default" => Chef::Provider::Package::Dpkg},
+                                [ "redhat", "centos", "fedora", "suse" ] => {"default" => Chef::Provider::Package::Rpm}
+                                )
   end
 when "source"
   execute "riak-src-unpack" do
-    cwd "/tmp/riak_pkg"    
+    cwd "/tmp/riak_pkg"
     command "tar xvfz #{package_file}"
   end
-  
+
   execute "riak-src-build" do
     cwd "/tmp/riak_pkg/#{base_filename}"
     command "make clean all rel"
   end
-  
+
   execute "riak-src-install" do
     command "mv /tmp/riak_pkg/#{base_filename}/rel/riak #{node[:riak][:package][:prefix]}"
     not_if { File.directory?("#{node[:riak][:package][:prefix]}/riak") }
