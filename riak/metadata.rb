@@ -26,13 +26,9 @@ recipe            "riak", "Installs Riak"
 recipe            "riak::autoconf", "Automatically configure nodes from chef-server information."
 recipe            "riak::innostore", "Install and configure the Innostore backend."
 recipe            "riak::iptables", "Automatically configure iptables rules for Riak."
-depends           "erlang"
+depends           "iptables"
 
-%w{ubuntu debian}.each do |os|
-  supports os
-  depends           "iptables"
-end
-%{centos redhat fedora}.each do |os|
+%w{ubuntu debian centos redhat fedora}.each do |os|
   supports os
 end
 #

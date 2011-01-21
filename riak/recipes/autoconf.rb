@@ -28,11 +28,11 @@ end
 
 # Riak's packaged init.d script doesn't work. We'll use the bin script
 # instead.
-bash "Start riak" do
-  code "(#{bin_path}/riak ping) || (#{bin_path}/riak start)"
-end
-# Wait for riak_kv to be available, timeout after 45 seconds
-execute "#{bin_path}/riak-admin wait-for-service riak_kv #{node[:riak][:erlang][:node_name]}" do
+bash "Start riak and wait for riak_kv to be available" do
+  code <<-SCRIPT
+#{bin_path}/riak start
+#{bin_path}/riak-admin wait-for-service riak_kv #{node[:riak][:erlang][:node_name]}
+SCRIPT
   timeout 45
 end
 

@@ -93,9 +93,19 @@ module RiakTemplateHelper
 
     # Tuple-ize appropriate settings
     riak['sasl']['sasl_error_logger'] = Tuple.new([:file, riak['sasl']['sasl_error_logger']['file']])
+
+    allifs = lambda {|pair| pair[0] == "0.0.0.0" }
     %w{http https}.each do |protocol|
-      if riak['riak_core'][protocol]
-        riak['riak_core'][protocol] = riak['riak_core'][protocol].map { |pair| Tuple.new(pair) }
+      if pairs = riak['riak_core'][protocol]
+        # If there's all-interfaces bindings ("0.0.0.0"), remove any
+        # specific interface bindings on the associated ports. Trying
+        # to bind twice will prevent riak from starting without much
+        # diagnostic information.
+        if pairs.any?(&allifs)
+          ports = pairs.select(&allifs).map {|pair| pair[1] }
+          pairs = pairs.delete_if {|(intf, port)| ports.include?(port) && intf != "0.0.0.0" }
+        end
+        riak['riak_core'][protocol] = pairs.uniq.map { |pair| Tuple.new(pair) }
       end
     end
 

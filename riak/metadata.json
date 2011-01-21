@@ -972,9 +972,6 @@
   "dependencies": {
     "iptables": [
 
-    ],
-    "erlang": [
-
     ]
   },
   "long_description": "",
@@ -991,10 +988,16 @@
     "debian": [
 
     ],
-    "centos redhat fedora": [
+    "fedora": [
+
+    ],
+    "centos": [
 
     ],
     "ubuntu": [
+
+    ],
+    "redhat": [
 
     ]
   },
